@@ -5,7 +5,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.integrate import odeint, ode
-
+import pandas as pd
 
 
 
@@ -147,46 +147,38 @@ def steady_state(v0):
     n0 = float( alpha_n(v0) / (alpha_n(v0) + beta_n(v0)) )
     return [v0, m0, h0, n0]
 
-init_cond = steady_state(-25)
+init_cond = steady_state(-25)[0], steady_state(-25)[2], steady_state(-25)[3]
 
-# Parameters
-t = np.linspace(0, 5000, 50000)
-
-I_0 = 2.18
-
+# Parameterskanye we
+t = np.linspace(0, 5000, 100000)
 factor_m = 1/10e10
+I_0 = 2.75
 factor_h = 4
 factor_n = 1
 
+def m_infinity(V):
+    m_inf = float(alpha_m(V) / (alpha_m(V) + beta_m(V)))
+    return m_inf
 
 
-def HHModel(X, t, I_0):
+def HHModel_Reduced(X, t):
     """
-    Re-casting the HH model so that time constant manipulation is easier.
-    :param X: The array of variables
-    :param t: time
-    :return: The 4 Equations of the Hodgkin Huxley Model
+    Hodgkin Huxley Model with instantaneous m dynamics
     """
-
     V = X[0]
-    m = X[1]
-    h = X[2]
-    n = X[3]
+    h = X[1]
+    n = X[2]
+    m_inf = m_infinity(V)
 
+    I = lambda t, I_0: I_0 * np.sin(2 * np.pi * 0.05 * t)
 
+    dVdt = ( I(t, I_0) - I_Na(V, m_inf, h) - I_K(V, n) - I_L(V) )/(C_m)
 
-    dVdt = ( (I_ext(t, I_0) ) - I_Na(V, m, h) - I_K(V, n) - I_L(V)) / (C_m)
-
-    # dmdt = alpha_m(V) * (1.0 - m) - beta_m(V) * m
-    dmdt = ( alpha_m(V) * (1.0 - m) - beta_m(V) * m ) /( (Tau_m(V)*factor_m)*(alpha_m(V)  + beta_m(V))  )
-
-    # dhdt = alpha_h(V) * (1.0 - h) - beta_h(V) * h
     dhdt = (alpha_h(V) * (1.0 - h) - beta_h(V) * h) / ( (Tau_h(V)*factor_h) * (alpha_h(V) + beta_h(V)))
 
-    # dndt = alpha_n(V) * (1.0 - n) - beta_n(V) * n
     dndt = (alpha_n(V) * (1.0 - n) - beta_n(V) * n) / (Tau_n(V)*factor_n * (alpha_n(V) + beta_n(V)))
 
-    return [dVdt, dmdt, dhdt, dndt]
+    return [dVdt, dhdt, dndt]
 
 
 
@@ -194,43 +186,36 @@ params = g_Na,g_K,g_L,V_Na,V_K,V_L
 
 
 
-
-
 def RunModel():
-
     """
-    A function to integrate the equations of the HH model with respect to time and the initial conditions specified.
+    A function to integrate the equations of the HH model which has been relieved of the m gating variable.
     :return: The integrated equations, as well as the gating currents.
     """
-
-    Y = odeint(HHModel, init_cond, t, args=(I_0, ))
+    Y = odeint(HHModel_Reduced, init_cond, t)
 
     V = Y[:,0]
-    m = Y[:,1]
-    h = Y[:,2]
-    n = Y[:,3]
+    h = Y[:,1]
+    n = Y[:,2]
 
-    INa = I_Na(V, m, h)
-    IK = I_K(V, n)
-    IL = I_L(V)
+    return V, h, n
 
-    return V, m, h, n, INa, IK, IL
-
-V, m, h, n, INa, IK, IL = RunModel()
-
-
+V, h, n = RunModel()
 
 """---------------------------------------------------------------------------------------------------------------------
    4. Plotting the Results
 ---------------------------------------------------------------------------------------------------------------------"""
 
 
-def PlotResults():
+def PlotResults(I_0):
 
     """
     Function to plot the integrated functions. Uncomment the relevant lines of code to plot what is needed
     :return: Responses of the variables with time, voltage.
     """
+    V2 = V[32000:]
+    t2 = t[32000:]
+    I = I_ext(t, I_0)[32000:]
+
 
     plt.figure()
     # plt.title("The Hodgkin Huxley Neuron under a constant current of 10 $\mu A / cm^2 $. ( $Tau_{m}$*" + str(factor_m) + ", $Tau_{h}$*" + str(factor_h) + ", $Tau_{n}$*" + str(factor_n) + ")." )
@@ -240,158 +225,69 @@ def PlotResults():
     plt.title("( $Tau_{m}$*" + str(factor_m) + ", $Tau_{h}$*" + str(factor_h) + ", $Tau_{n}$*" + str(
          factor_n) + "). $I_{0}$ = " + str(I_0) + ". $T$ (Celcius) = " + str(T))
 
-    plt.plot(t, V, label="$V$")
+    plt.plot(t2, V2, label="$V$")
+    # plt.plot(t, I_ext(t, I_0), "r-", label="$I_{ext}$")
+    plt.plot(t2, I, "r-", label="$I_{ext}$")
     plt.grid(b = True, which="major", color="b", linestyle="-")
-    plt.plot(t, I_ext(t, I_0), "r-", label="$I_{ext}$")
+    plt.grid(b=True, which="minor", color="b", linestyle="-", alpha=0.2)
+    plt.minorticks_on()
     plt.legend()
     plt.show()
 
-    amplitudes = [1.55, 1.65, 1.75, 1.85, 1.95]
 
+# Code for Bifurcation Diagram
 
-
-
-
-def PlotGating():
+def Bifurcation(amp_start, amp_end, step_size):
     """
-    Function to plot the gating variables. Created to make plotting easier.
-    :return: Plots for the gating variables
-    """
-    plt.figure()
-    plt.title("Plots of $m$, $h$, $n$")
-
-
-    plt.subplot(4, 1, 1)
-    plt.plot(t, m, "r-", label="$m$")
-    plt.plot(t, h, "b-", label="$h$")
-    plt.plot(t, n, "g-", label="$n$")
-    plt.xlabel("time")
-    plt.ylabel("Gating Variable")
-    plt.legend()
-    plt.grid()
-
-
-    plt.subplot(4, 1, 2)
-    plt.plot(V, m, "r-", label="$V-m$")
-    plt.xlabel("V")
-    plt.ylabel("m")
-    plt.grid()
-
-    plt.subplot(4, 1, 3)
-    plt.plot(V, h, "b-", label="$V-h$")
-    plt.xlabel("V")
-    plt.ylabel("h")
-    plt.grid()
-
-    plt.subplot(4, 1, 4)
-    plt.plot(V, n, "g-", label="$V-h$")
-    plt.xlabel("V")
-    plt.ylabel("n")
-    plt.grid()
-
-    plt.show()
-
-def PlotGating2():
-    """
-    Function to plot m vs h vs n to check the nature of their relationship
-    """
-    plt.figure()
-    plt.title("Plots of the Gating Variables")
-
-    plt.subplot(3,1,1)
-    plt.plot(m, h, "g-", label="$m-h$")
-    plt.xlabel("m")
-    plt.ylabel("h")
-    plt.grid()
-
-
-    plt.subplot(3,1,2)
-    plt.plot(n, h, "r-", label="$n-h$")
-    plt.xlabel("n")
-    plt.ylabel("h")
-    plt.grid()
-
-    plt.subplot(3,1,3)
-    plt.plot(m, n, "b-", label="$m-n$")
-    plt.xlabel("m")
-    plt.ylabel("n")
-    plt.grid()
-    plt.show()
-
-
-def PlotCurrent():
-    """
-    Function to plot the gating Currents. Created to make plotting easier.
-    :return: Plots for the gating Currents
-    """
-    plt.figure()
-
-    plt.subplot(3, 1, 1)
-    plt.title("Plots of $I_{Na}$, $I_{K}$, $I_{L}$")
-    plt.plot(t, INa, "g-", label="$I_{Na}$")
-    plt.grid()
-
-    plt.subplot(3, 1, 2)
-    plt.plot(t, IK, "r-", label="$I_{K}$")
-    plt.grid()
-
-    plt.subplot(3, 1, 3)
-    plt.plot(t, IL, "b-", label="$I_{L}$")
-    plt.grid()
-
-    plt.show()
-
-"""--------------------------------------------------------------------------------------------------------------------
-    5. Plotting the Time Constants and the steady state variables  
---------------------------------------------------------------------------------------------------------------------"""
-m0 = []
-h0 = []
-n0 = []
-for i in V:
-    temp = steady_state(i)
-    # a is now the array of steady state m's for all values of V
-    a = temp[1]
-    b = temp[2]
-    c = temp[3]
-    m0.append(a)
-    h0.append(b)
-    n0.append(c)
-
-
-def PlotTime():
-    """
-    Function to plot the time constants of the gating variables
-    :return: Plots
+    Function to plot return the Bifurcation dynamics of the Hodgkin Huxley Model.
     """
 
-    tau_m = Tau_m(V)
-    tau_h = Tau_h(V)
-    tau_n = Tau_n(V)
+    I_0 = amp_start
+    X = []
+    Y = []
 
-    plt.figure()
+    while I_0 <= amp_end:
+        I_arr = I_ext(t, I_0)
+        Ys = RunModel()
+        V = Ys[0][32000:]
 
-    #Plotting the steady state gating variables
-    plt.subplot(2, 1, 1)
-    plt.title("$m_0$, $h_0$ and $n_0$ with V for T = " + str(T))
-    plt.plot(V, m0, "r-", label="$m_0$")
-    plt.plot(V, h0, "b-", label="$h_0$")
-    plt.plot(V, n0, "g-", label="$n_0$")
-    plt.xlabel("V $mV$")
-    plt.ylabel("Steady State Gating Variables")
-    plt.legend()
-    plt.grid()
+        for i in range(0, len(V), 400):
+            X.append(I_arr[i])
+            Y.append(V[i])
 
-    #Potting the Time Constants of the gating variables
-    plt.subplot(2, 1, 2)
-    plt.title("$Tau_m$, $Tau_h$ and $Tau_n$ with V for T = " + str(T))
-    plt.plot(V, tau_m, "r-", label="$Tau_m$")
-    plt.plot(V, tau_h, "b-", label="$Tau_h$")
-    plt.plot(V, tau_n, "g-", label="$Tau_n$")
-    plt.xlabel("V $mV$")
-    plt.ylabel("Time Constants")
-    plt.legend()
-    plt.grid()
+        I_0 += step_size
 
+    X = np.array(X)
+    Y = np.array(Y)
+
+    xdata = np.savetxt(str(amp_start) + "-to-" + str(amp_end) + "_x.csv", X)
+    ydata = np.savetxt(str(amp_start) + "-to-" + str(amp_end) + "_y.csv", Y)
+    # return X, Y
+
+
+
+
+def PlotBifurcation(amp_start, amp_end):
+    """
+    Function to plot the data collected around the bifurcation region.
+    """
+    PATH = "/home/agastya123/PycharmProjects/ComputationalNeuroscience/HodgkinHuxleyModel/Figures_and_Results/Bifurcation/Changed Params/Values_Around_Bifurcation/"
+    # PATH = "/home/agastya123/Downloads/"
+    # PATH = "/home/agastya123/PycharmProjects/ComputationalNeuroscience/HodgkinHuxleyModel/"
+
+
+    file_x = f"{amp_start}-to-{amp_end}_x.csv"
+    file_y = f"{amp_start}-to-{amp_end}_y.csv"
+
+    x = np.genfromtxt(PATH + file_x, delimiter=",")
+    y = np.genfromtxt(PATH + file_y, delimiter=",")
+
+    plt.figure(figsize=(10,10))
+    plt.title(f"Bifurcation Diagram in the region {amp_start} to {amp_end} for the reduced model")
+    plt.scatter(x, y, s=10)
+    plt.grid(b=True, which="major", color="b", linestyle="-")
+    plt.grid(b=True, which="minor", color="b", linestyle="-", alpha=0.2)
+    plt.minorticks_on()
     plt.show()
 
 
@@ -400,7 +296,5 @@ def PlotTime():
 """---------------------------------------------------------------------------------------------------------------------
 Code Written by Agastya Patri. 
 ---------------------------------------------------------------------------------------------------------------------"""
-
-
 
 
