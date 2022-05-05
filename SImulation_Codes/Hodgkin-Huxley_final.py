@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.integrate import odeint, ode
 np.set_printoptions(threshold=np.inf)
+import os
+import glob
 
 
 
@@ -239,6 +241,36 @@ def Bifurcation(amp_start, amp_end, step_size):
    4. Plotting the Results
 ---------------------------------------------------------------------------------------------------------------------"""
 
+def read_files():
+    """
+    Function to read multiple data files in the diretory and concatenate them into
+    two dataframes: X(amplitudes) and Y(potentials)
+    """
+    PATH = "/home/agastya123/PycharmProjects/ComputationalNeuroscience/HodgkinHuxleyModel/Figures_and_Results/Bifurcation_Reduced_Model/Current_Ranges/"
+    files = os.listdir(PATH)
+
+    files_x = ["2.0-to-2.2_x.csv", "2.2-to-2.4_x.csv", "2.401-to-2.6_x.csv", "2.601-to-2.8_x.csv", "2.801-to-3_x.csv"]
+    files_y = ["2.0-to-2.2_y.csv", "2.2-to-2.4_y.csv", "2.401-to-2.6_y.csv", "2.601-to-2.8_y.csv", "2.801-to-3_y.csv"]
+
+    # READ EACH OF THE FILES IN files_x and files_y into pandas df and then concatenate both into GIATN X and Y dfs
+    # PLOT THE X and Y's
+
+    X_data = [np.genfromtxt(PATH + files_x[i]) for i in range(len(files_x))]
+    Y_data = [np.genfromtxt(PATH + files_y[i]) for i in range(len(files_y))]
+
+    X_final = np.concatenate(X_data)
+    Y_final = np.concatenate(Y_data)
+
+    return X_final, Y_final
+
+
+
+
+
+
+
+
+
 
 def PlotResults(I_0):
 
@@ -283,12 +315,13 @@ def PlotBifurcation(amp_start, amp_end):
     file_x = f"{amp_start}-to-{amp_end}_x.csv"
     file_y = f"{amp_start}-to-{amp_end}_y.csv"
 
-    x = np.genfromtxt(PATH + file_x, delimiter=",")
-    y = np.genfromtxt(PATH + file_y, delimiter=",")
+    # x = np.genfromtxt(PATH + file_x, delimiter=",")
+    # y = np.genfromtxt(PATH + file_y, delimiter=",")
 
+    x,y = read_files()
     plt.figure(figsize=(10,10))
     plt.title(f"Bifurcation Diagram in the region {amp_start} to {amp_end} for the reduced model")
-    plt.scatter(x, y, s=5)
+    plt.scatter(x, y, s=3)
     plt.grid(b=True, which="major", color="b", linestyle="-")
     plt.grid(b=True, which="minor", color="b", linestyle="-", alpha=0.2)
     plt.minorticks_on()
@@ -300,7 +333,7 @@ def PlotBifurcation(amp_start, amp_end):
 
 """---------------------------------------------------------------------------------------------------------------------
    6. Bifurcation for ranges of amplitude values
----------------------------------------------------------------------------------------------------------------------"""
+
 
 
 
@@ -328,6 +361,9 @@ ydata = np.savetxt(str(amp_start) + "-to-" + str(amp_end) + "_y.csv", Y)
 
 print(X)
 print(Y)
+---------------------------------------------------------------------------------------------------------------------"""
+
+
 
 
 
