@@ -5,7 +5,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.integrate import odeint, ode
-import pandas as pd
+np.set_printoptions(threshold=np.inf)
 
 
 
@@ -46,9 +46,8 @@ T = 6.3
 def Phi(T):
     """
     Temperature dependence function. Based on the Q10 temperature sensitivity and the Arrhenius Law.
-    :param T:
-    :return:
     """
+
     phi = 3**((T-6.3)/10)
     return phi
 
@@ -201,6 +200,41 @@ def RunModel():
 
 V, h, n = RunModel()
 
+
+
+# Code for the Bifurcation
+
+def Bifurcation(amp_start, amp_end, step_size):
+    """
+    Function to plot return the Bifurcation dynamics of the Hodgkin Huxley Model.
+    """
+
+    I_0 = amp_start
+    X = []
+    Y = []
+
+    while I_0 <= amp_end:
+        I_arr = I_ext(t, I_0)
+        Ys = RunModel()
+        V = Ys[0][32000:]
+
+        for i in range(100, len(V), 400):
+            X.append(I_arr[i])
+            Y.append(V[i])
+
+        I_0 += step_size
+
+    X = np.array(X)
+    Y = np.array(Y)
+
+    xdata = np.savetxt(str(amp_start) + "-to-" + str(amp_end) + "_x.csv", X)
+    ydata = np.savetxt(str(amp_start) + "-to-" + str(amp_end) + "_y.csv", Y)
+    # return X, Y
+
+
+
+
+
 """---------------------------------------------------------------------------------------------------------------------
    4. Plotting the Results
 ---------------------------------------------------------------------------------------------------------------------"""
@@ -235,45 +269,15 @@ def PlotResults(I_0):
     plt.show()
 
 
-# Code for Bifurcation Diagram
-
-def Bifurcation(amp_start, amp_end, step_size):
-    """
-    Function to plot return the Bifurcation dynamics of the Hodgkin Huxley Model.
-    """
-
-    I_0 = amp_start
-    X = []
-    Y = []
-
-    while I_0 <= amp_end:
-        I_arr = I_ext(t, I_0)
-        Ys = RunModel()
-        V = Ys[0][32000:]
-
-        for i in range(0, len(V), 400):
-            X.append(I_arr[i])
-            Y.append(V[i])
-
-        I_0 += step_size
-
-    X = np.array(X)
-    Y = np.array(Y)
-
-    xdata = np.savetxt(str(amp_start) + "-to-" + str(amp_end) + "_x.csv", X)
-    ydata = np.savetxt(str(amp_start) + "-to-" + str(amp_end) + "_y.csv", Y)
-    # return X, Y
-
-
 
 
 def PlotBifurcation(amp_start, amp_end):
     """
     Function to plot the data collected around the bifurcation region.
     """
-    PATH = "/home/agastya123/PycharmProjects/ComputationalNeuroscience/HodgkinHuxleyModel/Figures_and_Results/Bifurcation/Changed Params/Values_Around_Bifurcation/"
+    # PATH = "/home/agastya123/PycharmProjects/ComputationalNeuroscience/HodgkinHuxleyModel/Figures_and_Results/Bifurcation/Changed Params/Values_Around_Bifurcation/"
     # PATH = "/home/agastya123/Downloads/"
-    # PATH = "/home/agastya123/PycharmProjects/ComputationalNeuroscience/HodgkinHuxleyModel/"
+    PATH = "/home/agastya123/PycharmProjects/ComputationalNeuroscience/HodgkinHuxleyModel/Figures_and_Results/Bifurcation_Reduced_Model/Current_Ranges/"
 
 
     file_x = f"{amp_start}-to-{amp_end}_x.csv"
@@ -284,11 +288,46 @@ def PlotBifurcation(amp_start, amp_end):
 
     plt.figure(figsize=(10,10))
     plt.title(f"Bifurcation Diagram in the region {amp_start} to {amp_end} for the reduced model")
-    plt.scatter(x, y, s=10)
+    plt.scatter(x, y, s=5)
     plt.grid(b=True, which="major", color="b", linestyle="-")
     plt.grid(b=True, which="minor", color="b", linestyle="-", alpha=0.2)
     plt.minorticks_on()
     plt.show()
+
+
+
+
+
+"""---------------------------------------------------------------------------------------------------------------------
+   6. Bifurcation for ranges of amplitude values
+---------------------------------------------------------------------------------------------------------------------"""
+
+
+
+amp_start = 2.801
+amp_end = 3
+I_0 = amp_start
+X = []
+Y = []
+
+while I_0 <= amp_end:
+    I_arr = I_ext(t, I_0)
+    Ys = RunModel()
+    V = Ys[0][32000:]
+    for i in range(100, len(V), 400):
+        X.append(I_arr[i])
+        Y.append(V[i])
+
+    I_0 += 0.001
+
+X = np.array(X)
+Y = np.array(Y)
+
+xdata = np.savetxt(str(amp_start) + "-to-" + str(amp_end) + "_x.csv", X)
+ydata = np.savetxt(str(amp_start) + "-to-" + str(amp_end) + "_y.csv", Y)
+
+print(X)
+print(Y)
 
 
 

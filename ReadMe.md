@@ -189,8 +189,23 @@ Note: To make the bifurcation function work, All the definitions of I_0 need to 
 Many Things have happened, including the deletion of the Git Repository associated with this project. I need to be more 
 careful about the tools that I use to conduct my work. 
 
+Figure out why i cannot push the changes to the remote repository.
+
+The Problem seems to persist, where for whatever reason the value of I_0 defined in the beginning is the only one 
+which is chosen for the bifurcation. How the fuck do I fix this?
+
+UPDATE: Turns out that I_0 is declared globally (enabling the definition of other functions), and so declaring a 
+"new" I_0 within other functions will not update the value of the variable. 
+_A fix seems to the Bifurcation Problem seems to be to run the logic of the bifurcation outside the bounds of a function 
+/ "Globally"_
 
 
+FINAL BIFURCATION UPDATE: The Code finally works in its entirety. I'm not quite sure why i cannot write a function 
+to do the bifurcation analysis, but i've been struggling with this for so long that I'm just relieved that I have 
+a working solution.
+
+
+Things are looking up. 
 
 
 
