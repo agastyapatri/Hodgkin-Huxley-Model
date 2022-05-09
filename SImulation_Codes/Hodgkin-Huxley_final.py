@@ -153,7 +153,7 @@ init_cond = steady_state(-25)[0], steady_state(-25)[2], steady_state(-25)[3]
 # Parameterskanye we
 t = np.linspace(0, 5000, 100000)
 factor_m = 1/10e10
-I_0 = 2.75
+I_0 = 2.275
 factor_h = 4
 factor_n = 1
 
@@ -261,13 +261,10 @@ def read_files():
     X_final = np.concatenate(X_data)
     Y_final = np.concatenate(Y_data)
 
+    # xdata = np.savetxt(str(2) + "-to-" + str(3) + "_x.csv", X_final)
+    # ydata = np.savetxt(str(2) + "-to-" + str(3) + "_y.csv", Y_final)
+
     return X_final, Y_final
-
-
-
-
-
-
 
 
 
@@ -308,17 +305,16 @@ def PlotBifurcation(amp_start, amp_end):
     Function to plot the data collected around the bifurcation region.
     """
     # PATH = "/home/agastya123/PycharmProjects/ComputationalNeuroscience/HodgkinHuxleyModel/Figures_and_Results/Bifurcation/Changed Params/Values_Around_Bifurcation/"
-    # PATH = "/home/agastya123/Downloads/"
-    PATH = "/home/agastya123/PycharmProjects/ComputationalNeuroscience/HodgkinHuxleyModel/Figures_and_Results/Bifurcation_Reduced_Model/Current_Ranges/"
+    PATH = "/home/agastya123/PycharmProjects/ComputationalNeuroscience/HodgkinHuxleyModel/Figures_and_Results/Bifurcation_Reduced_Model/Current_Ranges/final_data/"
 
 
     file_x = f"{amp_start}-to-{amp_end}_x.csv"
     file_y = f"{amp_start}-to-{amp_end}_y.csv"
 
-    # x = np.genfromtxt(PATH + file_x, delimiter=",")
-    # y = np.genfromtxt(PATH + file_y, delimiter=",")
+    x = np.genfromtxt(PATH + file_x, delimiter=",")
+    y = np.genfromtxt(PATH + file_y, delimiter=",")
 
-    x,y = read_files()
+    # x,y = read_files()
     plt.figure(figsize=(10,10))
     plt.title(f"Bifurcation Diagram in the region {amp_start} to {amp_end} for the reduced model")
     plt.scatter(x, y, s=3)
@@ -328,17 +324,12 @@ def PlotBifurcation(amp_start, amp_end):
     plt.show()
 
 
-
-
-
 """---------------------------------------------------------------------------------------------------------------------
    6. Bifurcation for ranges of amplitude values
+---------------------------------------------------------------------------------------------------------------------"""
 
-
-
-
-amp_start = 2.801
-amp_end = 3
+amp_start = 2.75
+amp_end = 2.8
 I_0 = amp_start
 X = []
 Y = []
@@ -348,10 +339,10 @@ while I_0 <= amp_end:
     Ys = RunModel()
     V = Ys[0][32000:]
     for i in range(100, len(V), 400):
-        X.append(I_arr[i])
+        X.append(I_0)
         Y.append(V[i])
 
-    I_0 += 0.001
+    I_0 += 0.0001
 
 X = np.array(X)
 Y = np.array(Y)
@@ -361,7 +352,29 @@ ydata = np.savetxt(str(amp_start) + "-to-" + str(amp_end) + "_y.csv", Y)
 
 print(X)
 print(Y)
----------------------------------------------------------------------------------------------------------------------"""
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
